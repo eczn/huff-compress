@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "lib": [ "es2015", "dom" ],
+    "jsx": "react",
+    "module": "commonjs",
+    "esModuleInterop": true
+  }
+}

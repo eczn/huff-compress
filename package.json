@@ -1,0 +1,14 @@
+{
+  "name": "huff-compress",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "eczn",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.3.4000"
+  }
+}
