@@ -1,7 +1,5 @@
-/**
- * 这是一种泛型，用来给出 Elem 代表的权
- */
-export type GetPriority<Elem> = (a: Elem) => number;
+import { GetPriority } from "./public-type";
+
 
 /**
  * 获取父节点下标
