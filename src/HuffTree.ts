@@ -9,6 +9,7 @@ export class HuffTree<T> {
     h: Heap< Tree<T> >;
     how2build: How2Build<Tree<T>, T>;
     tree: Tree<T> | null = null;
+    matcher: Tree<T> | null = null;
     
     constructor(
         list: T[],
@@ -26,6 +27,8 @@ export class HuffTree<T> {
         this.h.init();
 
         this.tree = this.build();
+
+        console.log('this', this)
     }
 
     build(): Tree<T> | null {
@@ -46,24 +49,56 @@ export class HuffTree<T> {
         }
     }
 
+    match(num: number, j: (node: Tree<T>) => any) {
+        if (!this.matcher) {
+            this.setInit();
+            if (!this.matcher) return;
+        }
+        
+        const rs = ('00000000' + num.toString(2)).slice(-8);
+
+        console.log('rs', rs)
+        for (let i = 0; i < rs.length; i ++) {
+            const r = rs[i];
+
+            if (r === '1') this.matcher = this.matcher.rchild; 
+            else this.matcher = this.matcher.lchild;
+
+            if (!this.matcher.lchild && !this.matcher.rchild) {
+                j(this.matcher);
+                this.setInit();
+            }
+        } 
+    }
+
+    setInit() {
+        this.matcher = this.tree;
+    }
+
     log(
         node: Tree<T> | null,
         getInfo: (n: Tree<T>) => string,
-        deep = 0, 
-        lr = 0
+        before = '', isR = false
     ) {
-
         if (!node) {
             return;
         } else {
+            const noChild = (!node.lchild && !node.rchild) ? 'LEAF' : '';
             const info = getInfo(node);
+            const line = before ? '--' : '';
             
-            console.log(deep, info);
-            this.log(node.lchild, getInfo, deep + 1, lr - 1);
-            
-            this.log(node.rchild, getInfo, deep + 1, lr + 1);
+            if (isR) {
+                console.log(before.slice(0, -1) + '|' + line + info, noChild);
+            } else {
+                console.log(before + line + info, noChild);
+            }
 
-            
+            const lbefore = before + '    |';
+            // const r
+            const rbefore = before + '     ';
+            this.log(node.lchild, getInfo, lbefore, false);
+            this.log(node.rchild, getInfo, rbefore, true);
+
         }
     }
 }

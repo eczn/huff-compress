@@ -1,4 +1,6 @@
 import { HuffTree } from "./HuffTree";
+import { Buffer } from "buffer";
+
 
 export type Table = {
     [key: string]: number
@@ -30,20 +32,21 @@ export class Dictionary {
         return table;
     }
 
-    getTableList() {
-        const table = this.getTable();
-        const tableList: TableList = Object.keys(table).map(char => {
+    static getTalbeListFromTable(ta: Table) {
+        return Object.keys(ta).map(char => {
             return {
-                char, time: table[char]
+                char, time: ta[char]
             }
         });
-        
-        return tableList;
     }
 
-    getPrefixCode(): PrefixCode {
-        const tl = this.getTableList();
+    getTableList() {
+        const ta = this.getTable();
+        const tl = Dictionary.getTalbeListFromTable(ta);
+        return { tl, ta };
+    }
 
+    static getPrefixCode(tl: TableList) {
         const hufTree = new HuffTree(tl, e => e.time, (a, b) => {
             return {
                 char: '', 
@@ -57,11 +60,41 @@ export class Dictionary {
             map[node.val.char] = code;
         });
 
-        return map;
+        // hufTree.log(hufTree.tree, n => {
+        //     return `(${ n.val.char }/${ n.val.time })`
+        // });
+
+        return {
+            pcode: map, hufTree
+        };
     }
 
-    encode2hex() {
-        const pcode = this.getPrefixCode();
+    static binary2hex(binaryStr: string) {
+        let rs = '';
+        let i;
+
+        for (i = binaryStr.length; i >= 4; i -= 4) {
+            const r = binaryStr.substr(i - 4, 4);
+            const hex = parseInt(r, 2).toString(16);
+            rs = hex + rs;
+        }
+        const r = binaryStr.slice(0, i);
+        if (r) {
+            const hex = parseInt(r, 2).toString(16);
+            rs = hex + rs;
+        }
+        return rs;
+    }
+
+    static hex2buffer(hex: string) {
+        if (hex.length % 2 === 1) {
+            hex = '0' + hex;
+        }
+
+        return Buffer.from(hex, 'hex');
+    }
+
+    encoded2binary(pcode: PrefixCode) {
         let encoded = '';
         let i;
         for (i = 0; i < this.originWord.length; i++) {
@@ -69,22 +102,38 @@ export class Dictionary {
 
             encoded += pcode[ch];
         }
-        
-        const rs = []
-        for (i = encoded.length; i >= 4; i -= 4) {
-            const r = encoded.substr(i - 4, 4);
-            rs.unshift(parseInt(r, 2).toString(16));
-        }
-        rs.unshift(
-            parseInt(encoded.slice(0, i), 2).toString(16)
-        );
-        
-        
+        return encoded;
+    }
 
-        console.log('origin:', this.originWord);
-        console.log('prefixCode:', pcode);
-        console.log('encoded (binary):', encoded);
-        console.log('encoded (hex):', rs.join(''));
+    compress() {
+        const { ta, tl } = this.getTableList();
+        const { pcode } = Dictionary.getPrefixCode(tl);
+        const encoded = this.encoded2binary(pcode);
+        const hex = Dictionary.binary2hex(encoded);
+        const buf = Dictionary.hex2buffer(hex);
+
+        return {
+            ta, tl, pcode, encoded, hex, buf, originWord: this.originWord
+        }
+    }
+    
+
+    static decompress(ta: Table, buf: Buffer) {
+        const tl = Dictionary.getTalbeListFromTable(ta);
+        const { hufTree, pcode } = Dictionary.getPrefixCode(tl);
+
+        let theRes = '';
+
+        for (let i = 0; i < buf.length; i ++) {
+            const data = buf.readUInt8(i);
+
+            hufTree.match(data, n => {
+                theRes += n.val.char;
+            });
+            // console.log(data);
+        }
+        
+        return theRes;
     }
 
     test() {
